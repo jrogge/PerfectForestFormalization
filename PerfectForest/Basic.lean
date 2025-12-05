@@ -5,39 +5,41 @@ namespace Subgraph
 
 open Classical
 
-variable {V W : Type*} [Fintype V]-- [DecidableEq V]
-variable {G G' : SimpleGraph V}-- [DecidableRel G.Adj]
-variable {M M' : Subgraph G} {u v m w : V}-- [DecidableRel M.Adj]
--- variable (c : ConnectedComponent G)
-
--- def degreeOdd (M : G.Subgraph) (v : V) : Prop :=
---     Odd (M.degree v)
-    -- Odd (Fintype.card { w : V | M.Adj v w })
-
-/-
-a *perfect forest* in G is a subgraph of G such that
- - every connected component is an induced subgraph
- - every connected component is a tree (i.e. the graph is a forest)
- - every vertex has odd degree
--/
+variable {V W : Type*} [Fintype V]
+variable {G : SimpleGraph V}
+variable {M : Subgraph G}
 
 def IsPerfectForest (M : Subgraph G) : Prop :=
     M.coe.IsAcyclic ∧
     (∀ v ∈ M.verts, Odd (M.degree v)) ∧
     (∀ (c : ConnectedComponent M.coe), (M.induce c.supp).IsInduced)
--- end SimpleGraph
-
--- namespace Matching
 
 lemma Perfect_Matching_also_Perfect_Forest (h : M.IsPerfectMatching) :
   M.IsPerfectForest := by
     rw [IsPerfectForest]
     constructor
     {
-        have pathUnique : (h : ∀ v ∈ M.verts, ∀ w ∈ M.verts, (p q : M.coe.Path v w), p = q) := sorry
-        rw [isAcyclic_of_path_unique] at pathUnique
-        -- rw [IsAcyclic.path_unique]
-        sorry
+        rw [IsPerfectMatching] at h
+        have hmatching : M.IsMatching := h.left
+        have hspan := h.right
+        have h1 : ∀ v : V, v ∈ M.verts → M.degree v = 1 := by
+            have h_matching : M.IsMatching := h.1
+            have h2 : ∀ v ∈ M.verts, M.degree v = 1 := by
+                rw [isMatching_iff_forall_degree] at h_matching
+                exact h_matching
+            exact h2
+
+        have h2 : M.coe.IsAcyclic := by
+            rw [isAcyclic_iff_forall_adj_isBridge]
+            intro v w hadj
+            have hv : (v : V) ∈ M.verts := v.coe_prop
+            have hw : (w : V) ∈ M.verts := w.coe_prop
+            have h3 : M.degree v = 1 := h1 v v.coe_prop -- this is breaking
+            have h4 : M.degree w = 1 := by
+                sorry
+            simp [isBridge_iff]
+            <;> try { aesop }
+        exact h2
     }
     constructor
     {
